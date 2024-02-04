@@ -7,25 +7,26 @@ const _ = require("lodash");
 const path = require("path");
 const favicon = require("serve-favicon");
 const cookieParser = require("cookie-parser");
-const exphbs = require("express-handlebars");
 const expressValidator = require("express-validator");
 const session = require("express-session");
 const flash = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const mongo = require("mongodb");
-
+const exphbs = require("express-handlebars");
 const mongoose = require("mongoose");
 
-// mongoose.Promise = global.Promise;
+mongoose.connect(
+  "mongodb+srv://saradchhetri20690:Lu77pa@7882@cluster0.ots2hgf.mongodb.net/",
+  { useNewUrlParser: true, useUnifiedTopology: true },
+  (err, database) => {
+    if (err) {
+      throw err;
+    }
 
-main().catch((err) => console.log(err));
-
-//change the database with yours
-async function main() {
-  await mongoose.connect("mongodb://127.0.0.1:27017/medicDB");
-}
-
+    console.log("Connected....");
+  }
+);
 /*
     View Engine
 */
@@ -38,7 +39,7 @@ app.use(favicon(__dirname + "/public/favicon.ico"));
 app.engine("handlebars", exphbs({ defaultLayout: "layout" }));
 // app.set('view engine', 'engineToUse') -> sets default viewing engine
 app.set("view engine", "handlebars");
-
+// app.set("views", "./views");
 /*
     Bodyparser Middleware + Express session
 */
@@ -65,24 +66,41 @@ app.use(passport.session());
 /*
      Validator to validate data incoming with the re object to the server
 */
-app.use(
-  expressValidator({
-    errorFormatter: function (param, msg, value) {
-      var namespace = param.split("."),
-        root = namespace.shift(),
-        formParam = root;
+// app.use(
+//   expressValidator({
+//     errorFormatter: function (param, msg, value) {
+//       var namespace = param.split("."),
+//         root = namespace.shift(),
+//         formParam = root;
 
-      while (namespace.length) {
-        formParam += "[" + namespace.shift() + "]";
-      }
-      return {
-        param: formParam,
-        msg: msg,
-        value: value,
-      };
-    },
-  })
-);
+//       while (namespace.length) {
+//         formParam += "[" + namespace.shift() + "]";
+//       }
+//       return {
+//         param: formParam,
+//         msg: msg,
+//         value: value,
+//       };
+//     },
+//   })
+// );
+function customErrorFormatter(param, msg, value) {
+  const namespace = param.split(".");
+  const root = namespace.shift();
+  let formParam = root;
+
+  while (namespace.length) {
+    formParam += "[" + namespace.shift() + "]";
+  }
+
+  return {
+    param: formParam,
+    msg,
+    value,
+  };
+}
+
+app.use(expressValidator({ errorFormatter: customErrorFormatter }));
 
 /*
     Flash to pop-up mesages in the browser
